@@ -1,7 +1,8 @@
+const path = require("path");
 const dotenv = require("dotenv");
 const { z } = require("zod");
 
-dotenv.config();
+dotenv.config({ path: path.resolve(process.cwd(), ".env"), quiet: true });
 
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
@@ -12,7 +13,11 @@ const envSchema = z.object({
   DB_SSL: z
     .string()
     .optional()
-    .transform((value) => value === "true"),
+    .transform((value) => {
+      if (value === "true") return true;
+      if (value === "false") return false;
+      return process.env.NODE_ENV === "production";
+    }),
 });
 
 const parsedEnv = envSchema.safeParse(process.env);

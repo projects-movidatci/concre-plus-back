@@ -2,9 +2,15 @@ const { Pool } = require("pg");
 const env = require("../config/env");
 const logger = require("../config/logger");
 
+function wantsSsl() {
+  if (env.DB_SSL) return true;
+  const mode = String(process.env.PGSSLMODE || "").toLowerCase();
+  return ["require", "verify-ca", "verify-full"].includes(mode);
+}
+
 const pool = new Pool({
   connectionString: env.DATABASE_URL,
-  ssl: env.DB_SSL ? { rejectUnauthorized: false } : false,
+  ssl: wantsSsl() ? { rejectUnauthorized: false } : false,
   max: 20,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 5000,

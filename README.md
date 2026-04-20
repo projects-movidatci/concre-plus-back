@@ -32,7 +32,8 @@ Copy-Item .env.example .env
 | `NODE_ENV` | `development`, `test` o `production`. |
 | `PORT` | Puerto HTTP (por defecto **3000**). |
 | `DATABASE_URL` | URL PostgreSQL: `postgresql://usuario:password@host:5432/base`. |
-| `DB_SSL` | `true` en casi todos los PostgreSQL en la nube; `false` en local típico. |
+| `DB_SSL` | `true` en PostgreSQL en la nube; `false` en local sin TLS. Si no se define y `NODE_ENV=production`, se asume `true`. |
+| `PGSSLMODE` | Opcional (`require`, etc.). `docker-compose.yml` lo fija a `require` para forzar TLS frente a errores `no encryption`. |
 | `JWT_SECRET` | Secreto para JWT (**mínimo 8 caracteres**); en producción, largo y aleatorio. |
 | `JWT_EXPIRES_IN` | Caducidad del token (p. ej. `8h`, `7d`). |
 
@@ -45,6 +46,29 @@ Copy-Item .env.example .env
 | `npm test` | Placeholder (sin pruebas aún). |
 
 Servidor por defecto: `http://localhost:3000`.
+
+---
+
+## Docker (producción / servidor)
+
+En la carpeta del repo (mismo sitio que `docker-compose.yml`):
+
+1. Crea un archivo **`.env`** (no se sube a git) con al menos `DATABASE_URL`, `JWT_SECRET`, `NODE_ENV=production`, `PORT=3000`.
+2. **Contraseña con `#`:** en `.env`, la línea debe ir **entre comillas dobles**, por ejemplo  
+   `DATABASE_URL="postgresql://usuario:contraseña#con_almohadilla@host:5432/base"`  
+   Si no, todo lo que va después de `#` se interpreta como **comentario** y la URL queda truncada (y suele fallar el SSL o la autenticación).
+3. Arranque:
+
+```bash
+docker compose build --no-cache
+docker compose up -d
+```
+
+El `docker-compose.yml` define **`DB_SSL=true`** y **`PGSSLMODE=require`** en el servicio, con prioridad sobre el `.env`, para que la conexión a PostgreSQL en la nube vaya **cifrada** aunque el `.env` no cargue bien.
+
+Variables extra de despliegue (por ejemplo `CPLUS_BACKEND_CONTEXT`, `CPLUS_BACKEND_DIR`) pueden seguir en el mismo `.env`; Docker Compose las inyectará al contenedor.
+
+**Seguridad:** si las credenciales de base de datos se compartieron por chat o quedaron en logs, **cámbialas en el panel del proveedor** y actualiza `DATABASE_URL`.
 
 ---
 
